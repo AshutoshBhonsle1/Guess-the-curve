@@ -1,0 +1,980 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
+<title>Guess The Curve</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Patrick+Hand&family=Permanent+Marker&family=Reenie+Beanie&display=swap">
+<style>
+/* Layout: a graph-paper notebook page. The chart sheet is the hero, taped-on sticky note holds the scores, the buddy hops along the curve and falls off it on a miss. */
+:root{
+  --bg:#F2F6E2; --grid:#D3E6DC; --grid2:#B8D5CB; --sheet:#FFFFFA; --ink:#1E2A47; --soft:#5B6783;
+  --pen:#2A4FD6; --leaf:#80C846; --crumb:#C98A4B; --stone:#D9DDD3; --good:#1B813A; --bad:#D6382A;
+  --hl:#FFE566; --note:#FFF09A; --note2:#CBEAFF; --tape:rgba(176,208,140,.8); --shadow:#1E2A47;
+  --b-up:#BFE3FF; --home-bg:#FFFFFF; --home-grid:#E4EEE9; --home-grid2:#D2E2DA; --b-flat:#FFE88A; --b-down:#C8F0B0; --on-leaf:#0F2A12;
+  --display:'Permanent Marker','Marker Felt','Comic Sans MS',cursive;
+  --body:'Patrick Hand','Segoe Print','Bradley Hand','Comic Sans MS',cursive;
+  --hand:'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive;
+  --scrawl:'Reenie Beanie','Segoe Print','Bradley Hand','Comic Sans MS',cursive;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#122029; --grid:#1B3440; --grid2:#27495A; --sheet:#182B36; --ink:#EEEBDA; --soft:#9DB1B6;
+    --pen:#8FB1FF; --leaf:#6FC23B; --crumb:#B07A41; --stone:#3A4B53; --good:#6EDC8C; --bad:#FF7A68;
+    --hl:#8E7B1E; --note:#5A5120; --note2:#1F4560; --tape:rgba(150,185,200,.45); --shadow:#05090C;
+    --b-up:#25506B; --home-bg:#182B36; --home-grid:#1B3440; --home-grid2:#27495A; --b-flat:#5E5320; --b-down:#2F5A2A; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#122029; --grid:#1B3440; --grid2:#27495A; --sheet:#182B36; --ink:#EEEBDA; --soft:#9DB1B6;
+  --pen:#8FB1FF; --leaf:#6FC23B; --crumb:#B07A41; --stone:#3A4B53; --good:#6EDC8C; --bad:#FF7A68;
+  --hl:#8E7B1E; --note:#5A5120; --note2:#1F4560; --tape:rgba(150,185,200,.45); --shadow:#05090C;
+  --b-up:#25506B; --home-bg:#182B36; --home-grid:#1B3440; --home-grid2:#27495A; --b-flat:#5E5320; --b-down:#2F5A2A; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background-color:var(--bg);
+  background-image:
+    linear-gradient(var(--grid2) 1.5px,transparent 1.5px),
+    linear-gradient(90deg,var(--grid2) 1.5px,transparent 1.5px),
+    linear-gradient(var(--grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:120px 120px,120px 120px,24px 24px,24px 24px;
+  color:var(--ink); font:19px/1.4 var(--body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:24px 48px;
+}
+.page{max-width:1000px;margin:0 auto;position:relative}
+h1{font:400 clamp(42px,8vw,68px)/.95 var(--display);margin:0;position:relative;transform:rotate(-1.5deg);text-wrap:balance}
+h1 .w2{color:var(--pen);display:inline-block;transform:rotate(2.5deg) translateY(3px)}
+h1 .scribble{position:absolute;left:-2%;bottom:-16px;width:104%;height:16px;overflow:visible}
+h2{font:400 26px/1.15 var(--display);margin:0 0 14px;text-wrap:balance}
+h2 span{background:linear-gradient(transparent 58%,var(--hl) 58%);padding:0 4px}
+h3{font:400 20px/1.2 var(--display);margin:0}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:20px 32px;flex-wrap:wrap;margin-bottom:34px}
+.lede{margin:0;font:700 25px/1.1 var(--hand);color:var(--soft);max-width:22ch;transform:rotate(1.2deg)}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:30px;align-items:start}
+@media (max-width:860px){.layout{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--sheet);border:3px solid var(--ink);border-radius:28px 10px 26px 12px/12px 26px 10px 28px;box-shadow:6px 7px 0 var(--shadow);padding:24px;min-width:0}
+@media (max-width:480px){.card{padding:18px 16px}}
+:focus-visible{outline:3px dashed var(--pen);outline-offset:3px}
+
+/* start */
+.rules{list-style:none;counter-reset:r;margin:0 0 14px;padding:0;display:grid;gap:10px;max-width:60ch}
+.rules li{counter-increment:r;position:relative;padding-left:44px;min-height:32px}
+.rules li::before{content:counter(r);position:absolute;left:0;top:-2px;width:32px;height:32px;display:grid;place-items:center;
+  font:400 18px var(--display);border:2.5px solid var(--ink);border-radius:52% 48% 55% 45%/48% 55% 45% 52%;background:var(--hl)}
+.rules li:nth-child(2)::before{background:var(--b-up);transform:rotate(-6deg)}
+.rules li:nth-child(3)::before{background:var(--b-down);transform:rotate(5deg)}
+.rules li:nth-child(4)::before{background:var(--b-flat);transform:rotate(-3deg)}
+.shapes{margin:0 0 22px;color:var(--soft);max-width:60ch}
+.hint{min-height:1.4em;font:700 18px var(--hand);color:var(--bad);margin:2px 0 0}
+.btn{appearance:none;border:3px solid var(--ink);border-radius:16px 24px 14px 26px/24px 14px 26px 16px;padding:10px 26px 9px;background:var(--leaf);color:var(--on-leaf);
+  font:400 22px/1.1 var(--display);cursor:pointer;box-shadow:0 6px 0 var(--shadow);transition:transform .12s,box-shadow .12s}
+.btn:hover{transform:translateY(-2px) rotate(-1deg);box-shadow:0 8px 0 var(--shadow)}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--shadow)}
+.row{display:flex;gap:14px 18px;flex-wrap:wrap;align-items:center}
+.linkbtn{appearance:none;background:none;border:0;padding:4px;color:var(--soft);font:700 21px var(--hand);text-decoration:underline wavy var(--pen);text-underline-offset:5px;cursor:pointer}
+
+/* play */
+.hud{display:flex;justify-content:space-between;align-items:center;gap:6px 16px;margin-bottom:10px;flex-wrap:wrap}
+.hudl,.hudr{display:flex;align-items:center;gap:10px;font:700 23px var(--hand)}
+.hud b{font:400 28px var(--display);line-height:1}
+.hudr b{color:var(--pen)}
+.dots{display:flex;gap:6px}
+.dots i{width:15px;height:15px;border:2.5px solid var(--ink);border-radius:50% 46% 52% 48%;display:block}
+.dots i.done{background:var(--leaf)}
+.dots i.cur{background:var(--hl);transform:scale(1.2)}
+.chartwrap{width:100%;min-width:0;position:relative;overflow:hidden}
+#chart{display:block;width:100%}
+svg text{font-family:var(--hand)}
+.plot{fill:var(--sheet);stroke:var(--ink);stroke-width:2.6}
+.band{fill:var(--hl);opacity:.6}
+.gl{stroke:var(--grid2);stroke-width:1.6;stroke-dasharray:1 6;stroke-linecap:round}
+.vl{stroke:var(--grid2);stroke-width:1.6;stroke-dasharray:1 6;stroke-linecap:round}
+.tick{fill:var(--soft);font-size:17px;font-weight:700}
+.axis-title{fill:var(--soft);font:400 22px var(--scrawl)}
+.qmark{fill:var(--ink);font:400 46px var(--display);opacity:.5;transform-box:fill-box;transform-origin:50% 50%;animation:bob 1.1s ease-in-out infinite alternate}
+@keyframes bob{from{transform:translateY(-5px) rotate(-5deg)}to{transform:translateY(5px) rotate(5deg)}}
+.seg{fill:none;stroke:var(--pen);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.seg.bad{stroke:var(--bad)}
+.seg.rest{stroke-width:4.5;stroke-dasharray:.1 9;opacity:.7}
+.seg.rest.fade{animation:fadein .42s ease both}
+@keyframes fadein{from{opacity:0}to{opacity:.7}}
+.dot0{fill:var(--sheet);stroke:var(--pen);stroke-width:3.2}
+.xmark{fill:none;stroke:var(--bad);stroke-width:4.5;stroke-linecap:round}
+.slab{fill:none;stroke:var(--soft);stroke-width:2;stroke-dasharray:4 4}
+.slab.now{stroke:var(--pen);stroke-width:3;stroke-dasharray:6 4;animation:march .7s linear infinite}
+@keyframes march{to{stroke-dashoffset:-10}}
+.slab.given{fill:var(--stone);stroke:var(--ink);stroke-width:2.5;stroke-dasharray:none}
+.slab.ok{fill:var(--leaf);stroke:var(--ink);stroke-width:2.5;stroke-dasharray:none}
+.slab.bad{fill:var(--crumb);stroke:var(--ink);stroke-width:2.5;stroke-dasharray:none}
+.crack{fill:none;stroke:var(--ink);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ico{fill:none;stroke:var(--ink);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+.ico.ok{stroke:var(--good)}
+.ico.bad{stroke:var(--bad)}
+.ico.given{stroke:var(--soft)}
+.ico.ghost{stroke:var(--soft);stroke-dasharray:.1 6;opacity:.8}
+.hero{position:absolute;left:0;top:0;pointer-events:none;z-index:2;will-change:transform}
+.hero svg{width:var(--hw,44px);height:auto;display:block;overflow:visible;transform-origin:50% 96%}
+.status{min-height:2.7em;margin:12px 0 0;font:500 25px/1.1 var(--hand)}
+.status .v{font-weight:700}
+.status .v.ok{color:var(--good)}
+.status .v.bad{color:var(--bad)}
+.caption{position:relative;margin:14px 0 0;padding:16px 16px 14px;border:3px solid var(--ink);border-radius:6px 20px 8px 18px/18px 8px 20px 6px;background:var(--note2);display:grid;gap:6px;transform:rotate(-.6deg);box-shadow:4px 5px 0 var(--shadow)}
+.chip{display:inline-block;font:400 14px/1 var(--display);padding:5px 10px 4px;border:2.5px solid currentColor;border-radius:8px 4px 9px 5px;justify-self:start;transform:rotate(-3deg);background:var(--sheet)}
+.chip.well{color:var(--good)}
+.chip.ill{color:var(--bad)}
+.caption p{margin:0}
+.caption .ref{font:700 19px var(--hand);color:var(--soft)}
+.controls{margin-top:16px}
+.guess{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.gbtn{appearance:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:12px 6px 10px;border:3px solid var(--ink);color:var(--ink);cursor:pointer;
+  border-radius:18px 8px 20px 10px/10px 20px 8px 18px;box-shadow:0 5px 0 var(--shadow);transition:transform .12s,box-shadow .12s}
+.gbtn:nth-child(1){background:var(--b-up);transform:rotate(-1.4deg)}
+.gbtn:nth-child(2){background:var(--b-flat);transform:rotate(.8deg);border-radius:10px 20px 8px 18px/20px 8px 18px 10px}
+.gbtn:nth-child(3){background:var(--b-down);transform:rotate(-.6deg);border-radius:20px 10px 18px 8px/8px 18px 10px 20px}
+.gbtn:hover:not(:disabled){transform:translateY(-4px) rotate(0deg);box-shadow:0 9px 0 var(--shadow)}
+.gbtn:active:not(:disabled){transform:translateY(3px);box-shadow:0 2px 0 var(--shadow)}
+.gbtn:disabled{opacity:.55;cursor:default;box-shadow:0 2px 0 var(--shadow)}
+.gbtn svg{width:30px;height:30px;fill:none;stroke:var(--ink);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.gbtn .lab{font:400 19px/1.1 var(--display)}
+.gbtn .sub{font:700 18px var(--hand);color:var(--ink);opacity:.8}
+@media (max-width:420px){.gbtn .sub{display:none}}
+.keys{margin:12px 0 0;font:700 19px var(--hand);color:var(--soft)}
+@media (hover:none){.keys{display:none}}
+#nextRow{margin-top:4px}
+
+/* end */
+.bigwrap{position:relative;display:inline-block;padding:10px 34px 4px;margin:6px 0 4px}
+.bigwrap .circ{position:absolute;inset:0;width:100%;height:100%;overflow:visible;fill:none;stroke:var(--bad);stroke-width:4;stroke-linecap:round}
+.big{position:relative;font:400 clamp(60px,13vw,96px)/1 var(--display);letter-spacing:-.02em}
+.big span{font:700 .38em var(--hand);color:var(--soft);margin-left:.2em;letter-spacing:0}
+.recap{margin:18px 0 22px;display:grid;gap:10px}
+.rrow{display:grid;grid-template-columns:auto auto auto minmax(0,1fr);gap:4px 14px;align-items:center}
+.rrow .rl{font:700 20px var(--hand);color:var(--soft);white-space:nowrap}
+.pips{display:flex;gap:4px}
+.pips i{width:18px;height:11px;border:2px solid var(--ink);border-radius:5px;background:transparent;display:block;border-style:dashed;border-color:var(--soft)}
+.pips i.given{background:var(--stone);border:2px solid var(--ink)}
+.pips i.ok{background:var(--leaf);border:2px solid var(--ink)}
+.pips i.bad{background:var(--crumb);border:2px solid var(--ink)}
+.rrow .rs{font:400 17px var(--display)}
+.rrow .rt{color:var(--soft);min-width:0}
+@media (max-width:480px){.rrow{grid-template-columns:auto auto 1fr}.rrow .rt{grid-column:1/-1}}
+
+/* board: a sticky note taped to the page */
+.note-card{position:relative;background:var(--note);border:3px solid var(--ink);border-radius:5px 5px 18px 5px/5px 5px 5px 18px;box-shadow:5px 7px 0 var(--shadow);padding:30px 18px 18px;transform:rotate(1.4deg);min-width:0}
+.note-card::before{content:"";position:absolute;top:-15px;left:50%;width:96px;height:28px;margin-left:-48px;background:var(--tape);transform:rotate(-3deg);border-left:2px dotted var(--ink);border-right:2px dotted var(--ink);opacity:.95}
+.boardhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:10px}
+.boardhead h2{margin:0;font-size:24px}
+.tag{font:700 19px var(--hand);color:var(--soft)}
+.scores{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.scores li{display:grid;grid-template-columns:2.2ch minmax(0,1fr) auto;gap:10px;align-items:baseline;padding:4px 10px;border-radius:40% 55% 45% 50%/60% 45% 55% 40%}
+.scores li.hl{box-shadow:0 0 0 2.5px var(--bad);transform:rotate(-1deg)}
+.scores .rk{font:700 21px var(--hand);color:var(--soft)}
+.scores .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:21px}
+.scores .sc{font:700 24px var(--hand);font-variant-numeric:tabular-nums}
+.scores .sc small{color:var(--soft);font-size:17px}
+.scores li.empty{display:block;color:var(--soft);padding-inline:0}
+.note{margin:12px 0 0;font:700 19px/1.15 var(--hand);color:var(--soft)}
+.foot{margin:34px 0 0;font-size:17px;color:var(--soft);max-width:72ch}
+.foot a{color:var(--pen);text-decoration:underline wavy var(--pen);text-underline-offset:4px}
+/* home and exit */
+body.home h1{font-size:clamp(56px,12vw,96px)}
+body.playing h1{font-size:clamp(30px,5vw,40px)}
+body.playing .lede{display:none}
+body.playing .top{margin-bottom:22px}
+.leave{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;margin:0 0 12px;padding:10px 14px;border:3px solid var(--ink);border-radius:8px 18px 8px 16px/16px 8px 18px 8px;background:var(--note);font:700 21px/1.1 var(--hand)}
+.leave span{flex:1 1 220px}
+.btn.sm{font-size:17px;padding:7px 16px 6px;box-shadow:0 4px 0 var(--shadow)}
+.btn.alt{background:var(--sheet);color:var(--ink)}
+.hudr .linkbtn{font-size:21px;margin-left:6px}
+/* homepage */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* The little curve buddy: a cheerful spring-loaded welcome on the homepage. */
+.home-mascot{
+  position:absolute;z-index:3;right:2px;top:clamp(210px,31vh,310px);width:166px;
+  display:grid;justify-items:center;gap:4px;pointer-events:none;
+}
+.home-mascot .buddy-wrap{width:112px;transform-origin:50% 100%;animation:mascot-hop 1.45s cubic-bezier(.36,.04,.62,.98) infinite}
+.home-mascot svg{display:block;width:100%;height:auto;overflow:visible;filter:drop-shadow(0 5px 0 color-mix(in srgb,var(--shadow) 18%,transparent))}
+.home-mascot .landing-shadow{width:58px;height:10px;margin-top:-1px;border-radius:50%;background:var(--ink);opacity:.16;animation:mascot-shadow 1.45s ease-in-out infinite}
+.home-mascot .mascot-note{
+  margin:2px 0 0;padding:7px 12px 6px;background:var(--note);border:2px solid var(--ink);
+  border-radius:14px 18px 12px 18px;box-shadow:3px 4px 0 var(--shadow);
+  color:var(--ink);font:700 19px/1 var(--hand);white-space:nowrap;transform:rotate(3deg)
+}
+.home-mascot .spark{position:absolute;color:var(--crumb);font:400 26px var(--hand);animation:sparkle 1.45s ease-in-out infinite}
+.home-mascot .spark.one{left:4px;top:12px;transform:rotate(-12deg)}
+.home-mascot .spark.two{right:2px;top:48px;animation-delay:.35s}
+@keyframes mascot-hop{
+  0%,100%{transform:translateY(0) rotate(-3deg) scaleX(1.04) scaleY(.94)}
+  12%{transform:translateY(5px) rotate(2deg) scaleX(1.1) scaleY(.84)}
+  30%{transform:translateY(-48px) rotate(-7deg) scaleX(.94) scaleY(1.1)}
+  43%{transform:translateY(-54px) rotate(5deg) scaleX(1.02) scaleY(1.02)}
+  58%{transform:translateY(-20px) rotate(7deg) scaleX(.98) scaleY(1.04)}
+  72%{transform:translateY(3px) rotate(-2deg) scaleX(1.1) scaleY(.86)}
+  84%{transform:translateY(-8px) rotate(2deg) scaleX(.98) scaleY(1.04)}
+}
+@keyframes mascot-shadow{0%,100%{transform:scaleX(1);opacity:.16}30%,48%{transform:scaleX(.62);opacity:.08}72%{transform:scaleX(1.12);opacity:.2}}
+@keyframes sparkle{0%,100%{opacity:.35;transform:scale(.75) rotate(-10deg)}45%{opacity:1;transform:scale(1.25) rotate(12deg)}}
+.top{justify-content:center}
+h1{text-align:center}
+body.home .top{margin:clamp(20px,10vh,110px) 0 34px}
+body.home h1{font-size:clamp(46px,11vw,92px)}
+body.home .layout{grid-template-columns:minmax(0,430px);justify-content:center;gap:30px}
+body.home #stage{background:none;border:0;box-shadow:none;border-radius:0;padding:0}
+body.playing .layout{grid-template-columns:minmax(0,820px);justify-content:center}
+body.playing .board{display:none}
+.join{position:relative}
+.join input{display:block;width:100%;font:400 27px/1.2 var(--body);color:var(--ink);background:var(--sheet);border:3px solid var(--ink);border-radius:999px;padding:14px 76px 12px 28px;box-shadow:0 6px 0 var(--shadow)}
+.join input::placeholder{color:var(--soft);opacity:.75}
+.join input[aria-invalid="true"]{border-color:var(--bad)}
+.join input:focus-visible{outline:3px dashed var(--pen);outline-offset:4px}
+.go{position:absolute;top:7px;bottom:7px;right:7px;aspect-ratio:1/1;display:grid;place-items:center;padding:0;border:3px solid var(--ink);border-radius:50%;background:var(--leaf);cursor:pointer;transition:transform .12s}
+.go svg{width:26px;height:26px;fill:none;stroke:var(--on-leaf);stroke-width:3.2;stroke-linecap:round;stroke-linejoin:round}
+.go:hover{transform:rotate(-8deg) scale(1.06)}
+.go:active{transform:scale(.94)}
+.hint{min-height:1.4em;margin:10px 0 0;text-align:center;font:700 19px var(--hand);color:var(--bad)}
+.board{min-width:0;text-align:center}
+.board h2{margin:0 0 14px;font:400 26px/1.15 var(--display);color:var(--ink)}
+.board .scores{margin:0;text-align:left}
+.board .how{margin-top:24px}
+.board .how summary{display:inline-block;cursor:pointer;font:700 21px var(--hand);color:var(--soft);text-decoration:underline wavy var(--pen);text-underline-offset:5px;list-style:none}
+.board .how summary::-webkit-details-marker{display:none}
+.board .how[open] summary{margin-bottom:14px}
+.board .how .rules,.board .how .shapes{text-align:left;margin-inline:auto}
+
+body:not(.home) .home-mascot{display:none}
+@media(max-width:760px){
+  .home-mascot{right:0;top:auto;bottom:22px;width:100px;opacity:.92}
+  .home-mascot .buddy-wrap{width:76px}
+  .home-mascot .mascot-note{font-size:15px;padding:6px 8px}
+  .home-mascot .spark{font-size:19px}
+}
+@media(max-width:520px){
+  .home-mascot{position:relative;right:auto;top:auto;bottom:auto;width:100%;margin:-8px auto 22px;display:flex;align-items:center;justify-content:center;gap:8px}
+  .home-mascot .buddy-wrap{width:62px;animation-duration:1.6s}
+  .home-mascot .landing-shadow{width:34px;margin-left:-12px;align-self:flex-end;margin-bottom:7px}
+  .home-mascot .mascot-note{font-size:16px}
+  .home-mascot .spark{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+  .home-mascot .buddy-wrap,.home-mascot .landing-shadow,.home-mascot .spark{animation:none}
+}
+
+body.home{background-color:var(--home-bg);background-image:
+    linear-gradient(var(--home-grid2) 1.5px,transparent 1.5px),
+    linear-gradient(90deg,var(--home-grid2) 1.5px,transparent 1.5px),
+    linear-gradient(var(--home-grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--home-grid) 1px,transparent 1px)}
+.boardbox{background:var(--sheet);border:3px solid var(--ink);border-radius:28px 10px 26px 12px/12px 26px 10px 28px;box-shadow:6px 7px 0 var(--shadow);padding:22px 22px 18px}
+.boardbox .note{text-align:center}
+@media (prefers-reduced-motion: reduce){
+  .bounce,.qmark,.slab.now{animation:none}
+  .seg.rest.fade{animation:none;opacity:.7}
+  .btn,.gbtn{transition:none}
+}
+</style>
+
+<style>
+/* Final results page — intentionally placed after the original stylesheet. */
+.results-screen{padding:2px 0 4px}
+.results-kicker{font:400 15px var(--display);letter-spacing:.13em;color:var(--soft);text-align:center;margin:0 0 14px}
+.star{color:var(--crumb);font-size:20px;padding:0 8px}
+.results-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
+.results-heading h2{font-size:clamp(30px,5vw,42px);margin:0 0 6px}
+.results-intro{font:700 21px/1.2 var(--hand);color:var(--soft);margin:0}
+.result-stamp{white-space:pre-line;flex:0 0 82px;width:82px;height:82px;display:grid;place-content:center;text-align:center;border:3px dashed var(--bad);border-radius:50%;font:400 17px/1.05 var(--display);color:var(--bad);transform:rotate(10deg)}
+.score-panel{position:relative;display:grid;grid-template-columns:minmax(150px,.8fr) minmax(0,1.2fr);gap:20px;align-items:center;overflow:hidden;padding:22px 24px;background:var(--note);border:3px solid var(--ink);border-radius:18px 7px 20px 9px;box-shadow:4px 5px 0 var(--shadow)}
+.score-label,.mini-label{font:400 14px var(--display);letter-spacing:.1em;color:var(--soft)}
+.score-copy .big{font-size:clamp(58px,10vw,82px);margin:4px 0 0}
+.score-copy .big span{font-size:.34em}
+.score-caption{font:700 18px var(--hand);color:var(--soft);margin:0}
+.score-meter-wrap{padding:10px 6px 10px 16px;border-left:2px dashed var(--grid2)}
+.meter-top{display:flex;justify-content:space-between;gap:10px;font:700 20px var(--hand);margin-bottom:9px}
+.meter-top b{font:400 22px var(--display);color:var(--pen)}
+.score-meter{height:16px;border:2px solid var(--ink);border-radius:99px;background:var(--sheet);overflow:hidden;transform:rotate(-1deg)}
+.score-meter span{display:block;width:0;height:100%;background:var(--leaf);border-right:2px solid var(--ink);transition:width .7s ease}
+.score-meter-wrap p{font:700 18px var(--hand);color:var(--soft);margin:10px 0 0}
+.score-doodle{position:absolute;right:12px;top:-14px;font:400 50px var(--hand);color:var(--pen);opacity:.35;transform:rotate(12deg)}
+.result-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0 24px}
+.stat-card{min-width:0;display:grid;grid-template-columns:auto 1fr;align-items:center;column-gap:8px;padding:12px 13px;border:2.5px solid var(--ink);border-radius:12px 18px 10px 16px;box-shadow:3px 4px 0 var(--shadow)}
+.stat-blue{background:var(--b-up);transform:rotate(-.7deg)}.stat-yellow{background:var(--b-flat);transform:rotate(.5deg)}.stat-green{background:var(--b-down);transform:rotate(-.4deg)}
+.stat-icon{grid-row:span 2;font-size:25px}.stat-value{font:400 clamp(22px,4vw,30px)/1 var(--display);white-space:nowrap}.stat-label{font:700 16px/1.1 var(--hand);opacity:.8}
+.recap-heading{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:0 0 12px}
+.recap-heading h3{font:400 24px var(--display);margin-top:3px}
+.recap-key{font:700 15px var(--hand);color:var(--soft);white-space:nowrap}
+.recap-key i{display:inline-block;width:10px;height:10px;border:1px solid var(--ink);border-radius:3px;margin:0 3px 0 8px}
+.key-right{background:var(--leaf)}.key-miss{background:var(--crumb)}
+.results-screen .recap{margin:0 0 20px;display:grid;gap:9px}
+.results-screen .rrow{display:grid;grid-template-columns:64px minmax(90px,1fr) 48px minmax(90px,1.2fr);gap:8px 12px;align-items:center;padding:10px 12px;background:var(--sheet);border:2px solid var(--grid2);border-radius:9px 16px 8px 14px}
+.results-screen .rrow .rl{font:400 16px var(--display);color:var(--soft)}
+.results-screen .pips{display:flex;gap:4px}.results-screen .pips i{flex:1;min-width:5px;height:13px;border-radius:4px;background:var(--crumb)}.results-screen .pips i.ok{background:var(--leaf)}
+.results-screen .rrow .rs{font:400 17px var(--display);text-align:right}.results-screen .rrow .rt{font:700 17px var(--hand);text-align:right;color:var(--ink)}
+.results-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:4px}.results-actions .btn{padding-inline:24px}
+.results-footer{text-align:center;font:700 17px var(--hand);color:var(--soft);margin:22px 0 0}
+.result-note{padding:10px 12px;background:var(--note2);border-radius:8px}
+@media(max-width:560px){.results-heading{align-items:flex-start}.result-stamp{flex-basis:68px;width:68px;height:68px;font-size:14px}.score-panel{grid-template-columns:1fr;gap:8px;padding:18px}.score-meter-wrap{border-left:0;border-top:2px dashed var(--grid2);padding:12px 0 2px}.result-stats{gap:7px}.stat-card{padding:10px 8px;column-gap:4px}.stat-icon{font-size:19px}.stat-label{font-size:14px}.results-screen .rrow{grid-template-columns:54px minmax(65px,1fr) 42px}.results-screen .rrow .rt{grid-column:2/-1;text-align:left;margin-top:-5px}.recap-key{font-size:13px}}
+@media(prefers-reduced-motion:reduce){.score-meter span{transition:none}}
+</style>
+
+</head><body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="buddy" viewBox="0 -6 48 64">
+    <g style="fill:none;stroke:var(--ink);stroke-width:3;stroke-linecap:round;stroke-linejoin:round">
+      <path d="M17 45 L15 54 M11.5 54.5 H18"/>
+      <path d="M31 45 L33 54 M30 54.5 H36.5"/>
+    </g>
+    <path d="M24 13 C37 13 43 22 43 32 C43 42 35 47 24 47 C13 47 5 42 5 32 C5 22 11 13 24 13 Z" style="fill:#FF8F66;stroke:var(--ink);stroke-width:2.8;stroke-linejoin:round"/>
+    <path d="M12 38 C14 42 19 44 24 44" style="fill:none;stroke:#FFC2A8;stroke-width:3;stroke-linecap:round"/>
+    <g transform="rotate(14 24 14)" style="stroke:var(--ink);stroke-width:2.2;stroke-linejoin:round">
+      <rect x="20.5" y="4" width="7" height="11" style="fill:#FFD84D"/>
+      <path d="M20.5 4 L24 -4 L27.5 4 Z" style="fill:#F2C894"/>
+      <path d="M22.8 -1 L24 -4 L25.2 -1 Z" style="fill:var(--ink)"/>
+    </g>
+    <circle cx="18.5" cy="28" r="5" style="fill:#fff;stroke:var(--ink);stroke-width:2.2"/>
+    <circle cx="31" cy="28" r="5.6" style="fill:#fff;stroke:var(--ink);stroke-width:2.2"/>
+    <circle cx="20.5" cy="29" r="2.2" style="fill:#1E2A47"/>
+    <circle cx="33.2" cy="29" r="2.5" style="fill:#1E2A47"/>
+    <path d="M20 38 Q26 42.5 32 37" style="fill:none;stroke:var(--ink);stroke-width:2.4;stroke-linecap:round"/>
+  </symbol>
+</svg>
+
+<div class="page">
+  <header class="top">
+    <h1 aria-label="Guess The Curve!"><span class="w1">Guess The</span> <span class="w2">Curve!</span>
+      <svg class="scribble" viewBox="0 0 200 16" preserveAspectRatio="none" aria-hidden="true"><path d="M2 10 C30 2 52 14 82 8 S132 3 160 10 S190 6 198 9" fill="none" stroke="var(--bad)" stroke-width="4" stroke-linecap="round"/></svg>
+    </h1>
+  </header>
+
+  <div class="home-mascot" aria-hidden="true">
+    <span class="spark one">✳</span><span class="spark two">✦</span>
+    <div class="buddy-wrap"><svg viewBox="0 -6 48 64"><use href="#buddy"/></svg></div>
+    <span class="landing-shadow"></span>
+    <p class="mascot-note">Let's bounce!</p>
+  </div>
+
+  <div class="layout">
+    <main class="card" id="stage">
+
+      <section id="screenStart">
+        <form id="startForm" novalidate>
+          <label class="sr" for="nameInput">Your name</label>
+          <div class="join">
+            <input id="nameInput" type="text" maxlength="16" autocomplete="off" enterkeyhint="go" placeholder="Your name">
+            <button class="go" type="submit" id="startBtn" aria-label="Start round">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12 C9.5 12.4 14 11.6 19 12 M13 5.5 L19.5 12 L13 18.5"/></svg>
+            </button>
+          </div>
+          <p class="hint" id="nameHint" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section id="screenPlay" hidden>
+        <div class="hud">
+          <span class="hudl">Curve <b id="hudCurve">1</b> of 5 <span class="dots" id="hudDots" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span></span>
+          <span class="hudr">Parts right <b id="hudScore">0</b> <button class="linkbtn" type="button" id="exitBtn">Exit</button></span>
+        </div>
+        <div class="leave" id="exitConfirm" hidden role="alertdialog" aria-label="Leave this round">
+          <span>Leave this round? Your score will not be posted.</span>
+          <button class="btn sm" type="button" id="leaveBtn">Leave round</button>
+          <button class="btn sm alt" type="button" id="keepBtn">Keep playing</button>
+        </div>
+        <div class="chartwrap" id="chartWrap">
+          <svg id="chart" role="img" aria-label="Learning curve"></svg>
+          <div class="hero" id="hero" hidden aria-hidden="true">
+            <svg viewBox="0 -6 48 64"><use href="#buddy" x="0" y="-6" width="48" height="64"/></svg>
+          </div>
+        </div>
+        <p class="status" id="status" aria-live="polite"></p>
+        <div class="caption" id="caption" hidden>
+          <span class="chip" id="chip"></span>
+          <h3 id="capTitle"></h3>
+          <p id="capText"></p>
+          <p class="ref" id="capRef"></p>
+        </div>
+        <div class="controls">
+          <div class="guess" id="guessRow">
+            <button class="gbtn" type="button" data-g="U" aria-keyshortcuts="ArrowUp">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.5 C12 15 12.6 10 12 4.5 M5.5 11 L12 4.5 L18.5 11"/></svg>
+              <span class="lab">Up</span><span class="sub">error rises</span>
+            </button>
+            <button class="gbtn" type="button" data-g="P" aria-keyshortcuts="ArrowRight">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 12 C9 12.4 14 11.6 20.5 12 M14 5.5 L20.5 12 L14 18.5"/></svg>
+              <span class="lab">Plateau</span><span class="sub">error holds</span>
+            </button>
+            <button class="gbtn" type="button" data-g="D" aria-keyshortcuts="ArrowDown">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 C12 9 11.4 14 12 19.5 M5.5 13 L12 19.5 L18.5 13"/></svg>
+              <span class="lab">Down</span><span class="sub">error falls</span>
+            </button>
+          </div>
+          <p class="keys" id="keys">Keys: ↑ up, → plateau, ↓ down</p>
+          <div class="row" id="nextRow" hidden>
+            <button class="btn" type="button" id="nextBtn">Next curve</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="screenEnd" hidden class="results-screen">
+        <div class="results-kicker"><span class="star">✳</span> YOUR FIELD NOTES <span class="star">✳</span></div>
+        <div class="results-heading">
+          <div><h2><span id="resultTitle">Round complete!</span></h2><p class="results-intro" id="endLine"></p></div>
+          <div class="result-stamp" id="resultStamp">NICE<br>WORK!</div>
+        </div>
+        <div class="score-panel">
+          <div class="score-copy"><span class="score-label">YOUR SCORE</span><div class="big" id="endScore">0<span>/ 35</span></div><p class="score-caption" id="scoreCaption">Every call is a little lesson.</p></div>
+          <div class="score-meter-wrap"><div class="meter-top"><span>Curve intuition</span><b id="scorePercent">0%</b></div><div class="score-meter"><span id="scoreMeterFill"></span></div><p id="scoreVerdict">Keep observing those curves.</p></div>
+          <span class="score-doodle" aria-hidden="true">↗</span>
+        </div>
+        <div class="result-stats">
+          <div class="stat-card stat-blue"><span class="stat-icon">◎</span><span class="stat-value" id="statAccuracy">0%</span><span class="stat-label">Accuracy</span></div>
+          <div class="stat-card stat-yellow"><span class="stat-icon">★</span><span class="stat-value" id="statPerfect">0/5</span><span class="stat-label">Perfect curves</span></div>
+          <div class="stat-card stat-green"><span class="stat-icon">↗</span><span class="stat-value" id="statBest">0/7</span><span class="stat-label">Best curve</span></div>
+        </div>
+        <div class="recap-heading"><div><span class="mini-label">ROUND BREAKDOWN</span><h3>Every curve, revisited.</h3></div><span class="recap-key"><i class="key-right"></i> right <i class="key-miss"></i> missed</span></div>
+        <div class="recap" id="recap"></div>
+        <p class="note result-note" id="resNote" hidden></p>
+        <div class="results-actions"><button class="btn" type="button" id="againBtn">Play again ↗</button><button class="linkbtn" type="button" id="homeBtn">Back to homepage</button></div>
+        <p class="results-footer">A curve is a story about how a model learns. Keep reading between the points.</p>
+      </section>
+
+    </main>
+
+    <aside class="board" aria-labelledby="boardTitle">
+      <div class="boardbox">
+        <h2 id="boardTitle"><span>High scores</span></h2>
+        <span class="tag" id="boardTag" hidden>Loading</span>
+        <ol class="scores" id="boardList"></ol>
+        <p class="note" id="boardNote" hidden></p>
+      </div>
+      <details class="how">
+        <summary>How to play</summary>
+        <ol class="rules">
+              <li>Every curve is cut into 8 equal parts, left to right. Part 1 is shown to you.</li>
+              <li>For each of the other 7 parts, call what the test error does: up, plateau or down.</li>
+              <li>A right call reveals that part and moves on. A miss reveals the whole curve and ends it.</li>
+              <li>A round is 5 curves. Your score is the parts you called right, out of 35.</li>
+            </ol>
+        <p class="shapes">Each curve is a power law, an exponential, or one of the seven ill-behaved shapes catalogued in the review. After every curve you learn which one it was.</p>
+      </details>
+    </aside>
+  </div>
+
+  <p class="foot">The nine shapes come from <a href="https://arxiv.org/abs/2103.10948" target="_blank" rel="noopener">The Shape of Learning Curves: a Review</a> by Viering and Loog: the two well-behaved forms and the seven ill-behaved cases of its section VI. Section references follow the published version. The curves are drawn from simple formulas, not measured from real learners, and their parameters change every time.</p>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+// <gen>
+const SEG=8, SAMPLES=24;
+const FLAT=0.0075, MOVE=0.0105;
+const tri=(u,a,p,b,h)=>(u<=a||u>=b)?0:(u<p?h*(u-a)/(p-a):h*(b-u)/(b-p));
+const minF=f=>{let m=1;for(let k=0;k<=160;k++)m=Math.min(m,f(k/20));return m;};
+const count=(s,re)=>(s.match(re)||[]).length;
+
+const FAMILIES=[
+ {id:'power',name:'Power law',ill:false,ref:'Section IV',
+  text:'Error falls fast, then ever more slowly toward a floor. The shape most often reported for large deep networks.',
+  make(r){const c=.03+r()*.1,y0=.34+r()*.12,b=.5+r()*.9,s=1+r()*2.5,a=y0-c;return u=>c+a*Math.pow(1+s*u,-b);},
+  ok:(s)=>!s.includes('U')&&s[0]==='D'&&count(s,/D/g)>=2},
+ {id:'exp',name:'Exponential',ill:false,ref:'Section IV',
+  text:'Error shrinks by a constant factor with every step. Reported for problems with binary features and for decision trees.',
+  make(r){const c=.03+r()*.1,y0=.34+r()*.12,k=.3+r()*1.0,a=y0-c;return u=>c+a*Math.exp(-k*u);},
+  ok:(s)=>!s.includes('U')&&s[0]==='D'&&count(s,/D/g)>=2},
+ {id:'phase',name:'Phase transition',ill:true,ref:'Section VI-A',
+  text:'Error stays near chance, then drops abruptly once n passes a threshold close to the number of parameters.',
+  make(r){const ut=2+Math.floor(r()*4),hi=.42+r()*.05,lo=.05+r()*.07,dur=1+Math.floor(r()*2);
+    return u=>{if(u<=ut)return hi;const t=(u-ut)/dur;if(t>=1)return lo;return hi-(hi-lo)*t*t*(3-2*t);};},
+  ok:(s)=>/^PP/.test(s)&&s.includes('D')},
+ {id:'peak',name:'Peaking and double descent',ill:true,ref:'Section VI-B',
+  text:'Error climbs to a sharp peak near n ≈ d, the number of features, then falls. Seen with the pseudo-Fisher classifier; regularization can remove it.',
+  make(r){const A=.12+r()*.12,w=.45+r()*.35,up=3+Math.floor(r()*3),y0=.22+r()*.14,c=.05+r()*.05,b=.6+r()*.6;
+    return u=>c+(y0-c)*Math.pow(1+u,-b)+A*Math.exp(-Math.abs(u-up)/w);},
+  ok:(s)=>/U.*D/.test(s)},
+ {id:'dip',name:'Dipping',ill:true,ref:'Section VI-C',
+  text:'Error improves, then worsens and never comes back, even with unlimited data. Typical of a misspecified model trained on a surrogate loss.',
+  make(r){const um=2+Math.floor(r()*3),y0=.34+r()*.1,em=.07+r()*.08,ei=em+.07+r()*.1,p=.7+r()*.3,tau=1.2+r()*1.4;
+    return u=>u<=um?y0-(y0-em)*Math.pow(u/um,p):ei-(ei-em)*Math.exp(-(u-um)/tau);},
+  ok:(s,f)=>/D.*U/.test(s)&&s.lastIndexOf('D')<s.lastIndexOf('U')&&f(8)-minF(f)>=.05},
+ {id:'erm',name:'Non-monotone risk under ERM',ill:true,ref:'Section VI-D',
+  text:'Error rises for a stretch, then recovers. It can happen at any n, even when the learner minimizes the very loss it is judged on.',
+  make(r){const y0=.3+r()*.14,c=.04+r()*.06,b=.5+r()*.5,s=1+r(),Lr=1+Math.floor(r()*2),Lf=1+Math.floor(r()*2);
+    const a=Math.min(2+Math.floor(r()*4),8-Lr-Lf),p=a+Lr,e=p+Lf,B=.05+r()*.06;
+    const bumps=[[a,p,e,B]];
+    if(e+2<=8&&r()<.35){const a2=e+Math.floor(r()*Math.min(2,8-e-1)+0);bumps.push([a2,a2+1,a2+2,.05+r()*.05]);}
+    return u=>{let v=c+(y0-c)*Math.pow(1+s*u,-b);for(const q of bumps)v+=tri(u,q[0],q[1],q[2],q[3]);return v;};},
+  ok:(s)=>/U/.test(s)&&s.lastIndexOf('D')>s.indexOf('U')},
+ {id:'gp',name:'Misspecified Gaussian process',ill:true,ref:'Section VI-E',
+  text:'Several overfitting maxima and plateaus appear when the model’s kernel and noise assumptions differ from the truth.',
+  make(r){const y0=.3+r()*.12,sl=.035+r()*.035;const ps=[2+Math.floor(r()*2)];
+    ps.push(ps[0]+2+Math.floor(r()*2));if(r()<.5&&ps[1]+2<=7)ps.push(ps[1]+2+Math.floor(r()*2));
+    const hs=ps.map(()=>.05+r()*.05);
+    return u=>{let v=y0-sl*Math.log(1+u*1.5);ps.forEach((p,i)=>{if(p<=7)v+=tri(u,p-1,p,p+1,hs[i]);});return v;};},
+  ok:(s)=>count(s,/U+/g)>=2},
+ {id:'bayes',name:'Misspecified Bayesian regression',ill:true,ref:'Section VI-F',
+  text:'One broad peak appears when Bayes’ rule is applied to a model whose noise assumption is wrong.',
+  make(r){const up=3+Math.floor(r()*3),Lr=Math.min(2+Math.floor(r()*2),up-1),a=up-Lr,y0=.1+r()*.08,B=.1+r()*.1,tau=1.6+r()*1.2;
+    return u=>{let v=y0-.004*u;v+=u<=a?0:(u<up?B*(u-a)/(up-a):B*Math.exp(-(u-up)/tau));return v;};},
+  ok:(s)=>/UU/.test(s)&&s.lastIndexOf('D')>s.indexOf('UU')},
+ {id:'prior',name:'Perfect prior',ill:true,ref:'Section VI-G',
+  text:'Starts at the optimum, rises after the first few samples, then falls back. Even a perfect prior does not make a single problem’s curve monotone.',
+  make(r){const up=1+Math.floor(r()*2),e0=.05+r()*.07,B=.08+r()*.12,tau=1+r()*1.2,q=.7+r()*.3;
+    return u=>u<=up?e0+B*Math.pow(u/up,q):e0+B*Math.exp(-(u-up)/tau);},
+  ok:(s,f)=>s[0]==='U'&&s.includes('D')&&f(0)<=minF(f)+.003&&f(8)-f(0)<=.03}
+];
+
+function classify(f){
+  const types=[], segs=[];
+  for(let i=0;i<SEG;i++){
+    const pts=[];
+    for(let k=0;k<=SAMPLES;k++){
+      const u=i+k/SAMPLES, v=f(u);
+      if(!(v>0.03&&v<0.47)) return null;
+      pts.push([u,v]);
+    }
+    const d=pts[SAMPLES][1]-pts[0][1], ad=Math.abs(d);
+    if(ad>FLAT&&ad<MOVE) return null;
+    types.push(ad<=FLAT?'P':(d<0?'D':'U'));
+    segs.push(pts);
+  }
+  return {types,segs};
+}
+function makeCurve(rnd, famIdx){
+  const fam=FAMILIES[famIdx];
+  for(let tries=1;tries<=2000;tries++){
+    const f=fam.make(rnd), c=classify(f);
+    if(c && fam.ok(c.types.join(''),f)) return {types:c.types,segs:c.segs,fam,famIdx,tries};
+  }
+  throw new Error('no curve for '+fam.id);
+}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function shuffle(a,rnd){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function pickOrder(rnd){
+  const well=[],ill=[];
+  FAMILIES.forEach((f,i)=>(f.ill?ill:well).push(i));
+  const w=well[Math.floor(rnd()*well.length)];
+  return shuffle([w].concat(shuffle(ill,rnd).slice(0,4)),rnd);
+}
+// </gen>
+
+const ROUND=5, GUESSES=SEG-1, MAXSCORE=ROUND*GUESSES, NSTEP=50;
+const WORD={U:'goes up',P:'stays flat',D:'goes down'};
+const YMAX=0.5;
+const $=id=>document.getElementById(id);
+const RM=window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const wait=ms=>new Promise(r=>setTimeout(r,RM?0:ms));
+const lsGet=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}};
+
+let name='', round=null, cur=null, busy=false, L=null, paused=false;
+let dbApi=null, canWrite=null, boardMode='loading', sharedRows=[], lastKey=null, lastAt=0, boardNote='';
+
+/* ---------- screens ---------- */
+function show(which){
+  $('screenStart').hidden=which!=='home';
+  $('screenPlay').hidden=which!=='play';
+  $('screenEnd').hidden=which!=='end';
+  document.body.classList.toggle('home',which==='home');
+  document.body.classList.toggle('playing',which==='play'||which==='end');
+  if(which!=='play') $('hero').hidden=true;
+}
+
+/* ---------- buddy on the curve ---------- */
+function arrowPath(t,cx,cy){
+  if(t==='U') return `M${cx},${cy+8}V${cy-8}M${cx-6},${cy-2}L${cx},${cy-8}L${cx+6},${cy-2}`;
+  if(t==='D') return `M${cx},${cy-8}V${cy+8}M${cx-6},${cy+2}L${cx},${cy+8}L${cx+6},${cy+2}`;
+  return `M${cx-8},${cy}H${cx+8}M${cx+2},${cy-6}L${cx+8},${cy}L${cx+2},${cy+6}`;
+}
+function heroPut(x,y,lift){
+  $('hero').style.transform=`translate(${(x-L.HW/2).toFixed(1)}px,${(y-L.HH*0.96-(lift||0)).toFixed(1)}px)`;
+}
+function heroSquash(){
+  if(RM) return;
+  const s=$('hero').firstElementChild;
+  if(s.animate) s.animate([{transform:'scale(1.2,.8)'},{transform:'scale(.93,1.1)',offset:.6},{transform:'scale(1)'}],{duration:340,easing:'ease-out'});
+}
+function heroCheer(){
+  if(RM) return;
+  const s=$('hero').firstElementChild;
+  if(s.animate) s.animate([{transform:'translateY(0)'},{transform:'translateY(-24px) rotate(-10deg)'},{transform:'translateY(0)'}],{duration:520,iterations:3,easing:'ease-out'});
+}
+function heroFall(){
+  const hero=$('hero');
+  if(RM||!hero.animate){ hero.hidden=true; return Promise.resolve(); }
+  const pt=cur.segs[cur.seg-1][SAMPLES];
+  const x=L.X(pt[0])-L.HW/2, y=L.Y(pt[1])-L.HH*0.96, endY=L.H+30;
+  const a=hero.animate([
+    {transform:`translate(${x}px,${y}px) rotate(0deg)`,offset:0,easing:'ease-out'},
+    {transform:`translate(${x+6}px,${y-28}px) rotate(-16deg)`,offset:.22,easing:'ease-in'},
+    {transform:`translate(${x+40}px,${endY}px) rotate(280deg)`,offset:1}
+  ],{duration:780,fill:'forwards'});
+  return a.finished.catch(()=>{}).then(()=>{ hero.hidden=true; a.cancel(); });
+}
+function drawSegment(p){
+  const hero=$('hero');
+  hero.getAnimations().forEach(a=>a.cancel());
+  hero.hidden=false;
+  const len=p.getTotalLength();
+  if(RM||!len){ const e=p.getPointAtLength(len); heroPut(e.x,e.y,0); return Promise.resolve(); }
+  p.style.strokeDasharray=len; p.style.strokeDashoffset=len;
+  const s0=p.getPointAtLength(0); heroPut(s0.x,s0.y,0);
+  return new Promise(res=>{
+    const t0=performance.now(), D=560;
+    const step=now=>{
+      const t=Math.min(1,(now-t0)/D), e=1-Math.pow(1-t,3);
+      p.style.strokeDashoffset=len*(1-e);
+      const pt=p.getPointAtLength(len*e);
+      heroPut(pt.x,pt.y,Math.sin(Math.PI*t)*16);
+      if(t<1) requestAnimationFrame(step);
+      else{ p.style.strokeDasharray=''; p.style.strokeDashoffset=''; heroSquash(); res(); }
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+/* ---------- chart ---------- */
+function drawChart(opts){
+  opts=opts||{};
+  const svg=$('chart'), wrap=$('chartWrap'), hero=$('hero');
+  const W=Math.max(280,Math.floor(wrap.clientWidth));
+  const H=Math.round(Math.min(470,Math.max(330,W*0.68)));
+  const m={l:W<440?46:56,r:14,t:60,b:92};
+  const pw=W-m.l-m.r, ph=H-m.t-m.b;
+  const X=u=>m.l+u/SEG*pw, Y=v=>m.t+(1-v/YMAX)*ph;
+  const HW=W<440?34:44, HH=Math.round(HW*64/48);
+  L={W,H,m,pw,ph,X,Y,HW,HH};
+  hero.style.setProperty('--hw',HW+'px');
+  const f=n=>n.toFixed(1);
+  const pathD=i=>'M'+cur.segs[i].map(p=>f(X(p[0]))+','+f(Y(p[1]))).join('L');
+  const n=cur.seg;
+  const shown=j=>cur.res[j]!==null && j!==opts.animate;
+  let s='<defs><filter id="wob" x="-4%" y="-4%" width="108%" height="108%"><feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="2" seed="4" result="n"/><feDisplacementMap in="SourceGraphic" in2="n" scale="3.4" xChannelSelector="R" yChannelSelector="G"/></filter></defs>';
+  s+=`<rect class="plot" x="${m.l}" y="${m.t}" width="${pw}" height="${ph}" rx="4" filter="url(#wob)"/>`;
+  if(cur.state==='play'){
+    s+=`<rect class="band" x="${f(X(n)+3)}" y="${m.t+5}" width="${f(pw/SEG-6)}" height="${ph-10}" rx="8"/>`;
+    s+=`<text class="qmark" x="${f(X(n+0.5))}" y="${f(m.t+ph/2)}" text-anchor="middle" dominant-baseline="central">?</text>`;
+  }
+  for(let k=0;k<=5;k++){
+    const v=k/10, y=Y(v);
+    if(k>0) s+=`<line class="gl" x1="${m.l+4}" x2="${m.l+pw-4}" y1="${f(y)}" y2="${f(y)}"/>`;
+    s+=`<text class="tick" x="${m.l-9}" y="${f(y+5)}" text-anchor="end">${k*10}%</text>`;
+  }
+  for(let u=0;u<=SEG;u++){
+    if(u>0&&u<SEG) s+=`<line class="vl" x1="${f(X(u))}" x2="${f(X(u))}" y1="${m.t+4}" y2="${m.t+ph-4}"/>`;
+    if(W>=520 || u%2===0){
+      const anchor=u===SEG?'end':(u===0?'start':'middle');
+      s+=`<text class="tick" x="${f(X(u))}" y="${m.t+ph+20}" text-anchor="${anchor}">${u*NSTEP}</text>`;
+    }
+  }
+  for(let i=0;i<n;i++){
+    s+=`<path class="seg${cur.res[i]==='bad'?' bad':''}" data-i="${i}" d="${pathD(i)}"/>`;
+  }
+  if(opts.rest && cur.state==='missed'){
+    for(let i=n;i<SEG;i++) s+=`<path class="seg rest${opts.fade?' fade':''}" d="${pathD(i)}"/>`;
+  }
+  const p0=cur.segs[0][0];
+  s+=`<circle class="dot0" cx="${f(X(p0[0]))}" cy="${f(Y(p0[1]))}" r="5.5"/>`;
+  if(cur.state==='missed' && opts.animate===undefined){
+    const last=cur.segs[n-1][SAMPLES], lx=X(last[0]), ly=Y(last[1]);
+    s+=`<path class="xmark" d="M${f(lx-8)},${f(ly-8)}L${f(lx+8)},${f(ly+8)}M${f(lx+8)},${f(ly-8)}L${f(lx-8)},${f(ly+8)}"/>`;
+  }
+  const iy=m.t+ph+42, sy=m.t+ph+60, sw=Math.min(46,pw/SEG-10);
+  for(let i=0;i<SEG;i++){
+    const cx=X(i+0.5);
+    let cls='slab', icoCls='ico';
+    if(shown(i)){
+      cls+=' '+cur.res[i]; icoCls+=' '+cur.res[i];
+    }else if(i===n && cur.state==='play') cls+=' now';
+    s+=`<rect class="${cls}" x="${f(cx-sw/2)}" y="${f(sy-7)}" width="${f(sw)}" height="14" rx="6"/>`;
+    if(shown(i) && cur.res[i]==='bad'){
+      s+=`<path class="crack" d="M${f(cx-3)},${f(sy-6)}L${f(cx+1)},${f(sy-1)}L${f(cx-2)},${f(sy+2)}L${f(cx+3)},${f(sy+6)}"/>`;
+    }
+    if(shown(i)) s+=`<path class="${icoCls}" d="${arrowPath(cur.types[i],cx.toFixed(1),iy)}"/>`;
+    else if(cur.state==='missed' && i>=n && opts.rest) s+=`<path class="ico ghost" d="${arrowPath(cur.types[i],cx.toFixed(1),iy)}"/>`;
+  }
+  s+=`<text class="axis-title" x="${f(m.l+pw/2)}" y="${H-6}" text-anchor="middle">Training set size n</text>`;
+  s+=`<text class="axis-title" transform="rotate(-90 12 ${f(m.t+ph/2)})" x="12" y="${f(m.t+ph/2+7)}" text-anchor="middle">Test error</text>`;
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.setAttribute('height',H);
+  svg.setAttribute('aria-label',`Learning curve, test error against training set size. ${n} of ${SEG} parts revealed.`);
+  svg.innerHTML=s;
+  if(opts.animate!==undefined){
+    return drawSegment(svg.querySelector(`path.seg[data-i="${opts.animate}"]`));
+  }
+  hero.getAnimations().forEach(a=>a.cancel());
+  if(cur.state==='missed'){ hero.hidden=true; }
+  else{
+    const pt=cur.segs[n-1][SAMPLES];
+    heroPut(X(pt[0]),Y(pt[1]),0);
+    hero.hidden=false;
+  }
+  return Promise.resolve();
+}
+
+/* ---------- game flow ---------- */
+function updateHud(){
+  $('hudCurve').textContent=String(round.i+1);
+  $('hudScore').textContent=String(round.score);
+  document.querySelectorAll('#hudDots i').forEach((d,k)=>{d.className=k<round.i?'done':(k===round.i?'cur':'');});
+}
+function setGuessEnabled(on){
+  document.querySelectorAll('.gbtn').forEach(b=>{b.disabled=!on;});
+}
+function newCurve(){
+  const mine=makeCurve(Math.random,round.order[round.i]);
+  cur=mine;
+  cur.seg=1; cur.res=Array(SEG).fill(null); cur.res[0]='given'; cur.state='play';
+  $('caption').hidden=true;
+  $('nextRow').hidden=true; $('guessRow').hidden=false; $('keys').hidden=false;
+  busy=true; setGuessEnabled(false);
+  $('hero').hidden=true;
+  $('status').textContent='Part 1 is shown. Part 2 of 8: what does the error do next?';
+  updateHud();
+  drawChart({animate:0}).then(()=>{
+    if(cur!==mine) return;
+    drawChart({});
+    busy=false; setGuessEnabled(!paused);
+  });
+}
+function startRound(){
+  paused=false; $('exitConfirm').hidden=true;
+  round={i:0,score:0,done:[],order:pickOrder(Math.random)};
+  show('play');
+  newCurve();
+}
+async function guess(g){
+  if(busy||paused||!cur||cur.state!=='play') return;
+  busy=true; setGuessEnabled(false);
+  const R=round, C=cur;
+  const i=C.seg, truth=C.types[i], ok=g===truth;
+  C.res[i]=ok?'ok':'bad'; C.seg=i+1;
+  if(ok) round.score++;
+  if(!ok) C.state='missed'; else if(C.seg===SEG) C.state='perfect';
+  updateHud();
+  await drawChart({animate:i});
+  if(round!==R) return;
+  if(C.state==='missed'){
+    await heroFall();
+    if(round!==R) return;
+    drawChart({rest:true,fade:true});
+    await wait(430);
+    if(round!==R) return;
+    $('status').innerHTML=`<span class="v bad">Not quite.</span> Part ${i+1} ${WORD[truth]}.`+(i<SEG-1?' The rest of the curve is dotted in.':'');
+    finishCurve();
+  }else if(C.state==='perfect'){
+    drawChart({});
+    heroCheer();
+    $('status').innerHTML=`<span class="v ok">All 7 calls right.</span> Part 8 ${WORD[truth]}.`;
+    finishCurve();
+  }else{
+    drawChart({});
+    $('status').innerHTML=`<span class="v ok">Right.</span> Part ${i+1} ${WORD[truth]}. Part ${i+2} of 8: what does the error do?`;
+    setGuessEnabled(!paused); busy=false;
+  }
+}
+function finishCurve(){
+  const fam=cur.fam;
+  const chip=$('chip');
+  chip.textContent=fam.ill?'Ill-behaved':'Well-behaved';
+  chip.className='chip '+(fam.ill?'ill':'well');
+  $('capTitle').textContent=fam.name;
+  $('capText').textContent=fam.text;
+  $('capRef').textContent='Review, '+fam.ref;
+  $('caption').hidden=false;
+  round.done.push({res:cur.res.slice(),title:fam.name,score:cur.res.filter(r=>r==='ok').length});
+  $('guessRow').hidden=true; $('keys').hidden=true;
+  $('nextBtn').textContent=round.i===ROUND-1?'See results':'Next curve';
+  $('nextRow').hidden=false;
+  $('nextBtn').focus();
+  busy=false;
+}
+function next(){
+  if(paused||!round) return;
+  if(round.i===ROUND-1){ endRound(); return; }
+  round.i++; newCurve();
+}
+
+/* ---------- homepage ---------- */
+function goHome(first){
+  show('home');
+  $('nameInput').value='';
+  $('nameInput').removeAttribute('aria-invalid'); $('nameHint').textContent='';
+  if(!first){
+    try{ window.scrollTo(0,0); }catch(e){}
+    $('nameInput').focus();
+  }
+}
+
+/* ---------- end of round ---------- */
+function endRound(){
+  const total=round.score;
+  const pct=Math.round(total/MAXSCORE*100);
+  const perfect=round.done.filter(c=>c.score===GUESSES).length;
+  const best=Math.max(...round.done.map(c=>c.score));
+  $('endScore').innerHTML=`${total}<span>/ ${MAXSCORE}</span>`;
+  $('endLine').textContent=`${name}, here’s how your five curves played out.`;
+  $('scorePercent').textContent=pct+'%';
+  $('scoreMeterFill').style.width=pct+'%';
+  $('statAccuracy').textContent=pct+'%';
+  $('statPerfect').textContent=perfect+'/'+ROUND;
+  $('statBest').textContent=best+'/'+GUESSES;
+  let title,stamp,caption,verdict;
+  if(pct>=90){title='Curve whisperer!';stamp='CURVE\nWIZARD';caption='You read those curves like a pro.';verdict='Excellent pattern recognition.';}
+  else if(pct>=70){title='Nicely plotted!';stamp='WELL\nDONE';caption='You spotted most of the patterns.';verdict='A strong read of the learning curves.';}
+  else if(pct>=45){title='Good experiment!';stamp='KEEP\nGOING';caption='You’re getting a feel for the shapes.';verdict='Review the tricky shapes and try again.';}
+  else{title='Back to the notebook!';stamp='NEXT\nTRY';caption='Every miss is another pattern learned.';verdict='The curve-reading instincts build with practice.';}
+  $('resultTitle').textContent=title;$('resultStamp').textContent=stamp;
+  $('scoreCaption').textContent=caption;$('scoreVerdict').textContent=verdict;
+  const rc=$('recap'); rc.textContent='';
+  round.done.forEach((c,k)=>{
+    const row=document.createElement('div'); row.className='rrow';
+    const l=document.createElement('span'); l.className='rl'; l.textContent='Curve '+(k+1);
+    const pips=document.createElement('span'); pips.className='pips';
+    c.res.forEach(r=>{const i=document.createElement('i'); if(r) i.className=r; pips.appendChild(i);});
+    const sc=document.createElement('span'); sc.className='rs'; sc.textContent=c.score+'/'+GUESSES;
+    const t=document.createElement('span'); t.className='rt'; t.textContent=c.title;
+    row.append(l,pips,sc,t); rc.appendChild(row);
+  });
+  round=null; cur=null; busy=false;
+  show('end');
+  try{ window.scrollTo(0,0); }catch(e){}
+  $('againBtn').focus();
+  submitScore(total);
+}
+
+/* ---------- scores ---------- */
+const LS_SCORES='curvecall:v2:scores', LS_NAME='curvecall:v1:name';
+function localRows(){
+  try{
+    const a=JSON.parse(lsGet(LS_SCORES)||'[]');
+    return Array.isArray(a)?a.map(x=>({id:'L'+x.at,name:String(x.name||'Anonymous').slice(0,16),score:Number(x.score)||0,at:Number(x.at)||0,local:true})):[];
+  }catch(e){return [];}
+}
+function addLocal(entry){
+  const rows=localRows().map(r=>({name:r.name,score:r.score,at:r.at}));
+  rows.push({name:entry.name,score:entry.score,at:entry.at});
+  rows.sort((a,b)=>b.score-a.score||a.at-b.at);
+  lsSet(LS_SCORES,JSON.stringify(rows.slice(0,20)));
+}
+function renderBoard(){
+  const list=$('boardList'), tag=$('boardTag'), note=$('boardNote');
+  const mode=boardMode==='shared'?'shared':(boardMode==='local'?'local':'loading');
+  tag.textContent=mode==='shared'?'Everyone':(mode==='local'?'This device':'Loading');
+  list.textContent='';
+  if(mode==='loading'){
+    const li=document.createElement('li'); li.className='empty'; li.textContent='Loading scores…'; list.appendChild(li);
+  }else{
+    const rows=(mode==='shared'?sharedRows:localRows()).slice().sort((a,b)=>b.score-a.score||a.at-b.at).slice(0,5);
+    if(!rows.length){
+      const li=document.createElement('li'); li.className='empty'; li.textContent='No scores yet. Finish a round to post the first.'; list.appendChild(li);
+    }
+    rows.forEach((r,i)=>{
+      const li=document.createElement('li');
+      if((r.id===lastKey) || (r.local && lastAt && r.at===lastAt)) li.className='hl';
+      const rk=document.createElement('span'); rk.className='rk'; rk.textContent=String(i+1);
+      const nm=document.createElement('span'); nm.className='nm'; nm.textContent=r.name;
+      const sc=document.createElement('span'); sc.className='sc'; sc.append(String(r.score));
+      const sm=document.createElement('small'); sm.textContent=' /'+MAXSCORE; sc.appendChild(sm);
+      li.append(rk,nm,sc); list.appendChild(li);
+    });
+  }
+  note.hidden=!boardNote; note.textContent=boardNote;
+  const rn=$('resNote'); rn.hidden=!boardNote; rn.textContent=boardNote;
+}
+const SUPABASE_URL='https://vwplqwnnfntasmflhqxj.supabase.co';
+const SUPABASE_ANON_KEY='sb_publishable_Spe0AMoGv4RNlDi1GmWKYw_Gi32kBzq';
+const SB_READY=/^https:\/\/.+/.test(SUPABASE_URL) && !/YOUR_/.test(SUPABASE_URL+SUPABASE_ANON_KEY);
+const sbHeaders=()=>({apikey:SUPABASE_ANON_KEY,'Content-Type':'application/json'});
+async function sbFetchTop(){
+  const r=await fetch(SUPABASE_URL+'/rest/v1/scores?select=id,name,score,created_at&order=score.desc,created_at.asc&limit=10',{headers:sbHeaders()});
+  if(!r.ok) throw new Error('read '+r.status);
+  const rows=await r.json();
+  return rows.map(x=>({id:'S'+x.id,name:String(x.name||'Anonymous').slice(0,16),score:Math.max(0,Math.min(MAXSCORE,Number(x.score)||0)),at:Date.parse(x.created_at)||0}));
+}
+async function sbRefresh(){
+  try{ sharedRows=await sbFetchTop(); boardMode='shared'; }
+  catch(e){ if(boardMode==='loading') boardMode='local'; }
+  renderBoard();
+}
+async function submitScore(total){
+  const entry={name,score:total,max:MAXSCORE,at:Date.now()};
+  addLocal(entry);
+  lastKey=null; lastAt=entry.at; boardNote='';
+  renderBoard();
+  await ready;
+  if(SB_READY){
+    try{
+      const r=await fetch(SUPABASE_URL+'/rest/v1/scores',{method:'POST',headers:{...sbHeaders(),Prefer:'return=representation'},body:JSON.stringify({name:entry.name,score:entry.score})});
+      if(!r.ok) throw new Error('write '+r.status);
+      const [row]=await r.json(); if(row) lastKey='S'+row.id;
+      await sbRefresh();
+    }catch(e){ boardNote='Could not post to the shared board. Your score is saved on this device.'; }
+  }
+  renderBoard();
+}
+async function initDb(){
+  if(!SB_READY){ boardMode='local'; renderBoard(); return; }
+  const fallback=setTimeout(()=>{ if(boardMode==='loading'){ boardMode='local'; renderBoard(); } },6000);
+  await sbRefresh();
+  clearTimeout(fallback);
+  setInterval(()=>{ if(!document.hidden) sbRefresh(); },30000);
+}
+
+/* ---------- wiring ---------- */
+$('startForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const v=$('nameInput').value.trim();
+  if(!v){
+    $('nameInput').setAttribute('aria-invalid','true');
+    $('nameHint').textContent='Enter a name so your score can go on the board.';
+    $('nameInput').focus(); return;
+  }
+  $('nameInput').removeAttribute('aria-invalid'); $('nameHint').textContent='';
+  name=v.slice(0,16);
+  startRound();
+});
+document.querySelectorAll('.gbtn').forEach(b=>b.addEventListener('click',()=>guess(b.dataset.g)));
+$('nextBtn').addEventListener('click',next);
+$('againBtn').addEventListener('click',startRound);
+$('homeBtn').addEventListener('click',()=>goHome());
+$('exitBtn').addEventListener('click',()=>{
+  if(!cur) return;
+  paused=true; setGuessEnabled(false);
+  $('exitConfirm').hidden=false; $('keepBtn').focus();
+});
+$('keepBtn').addEventListener('click',()=>{
+  paused=false; $('exitConfirm').hidden=true;
+  if(cur && cur.state==='play' && !busy) setGuessEnabled(true);
+});
+$('leaveBtn').addEventListener('click',()=>{
+  round=null; cur=null; busy=false; paused=false;
+  $('exitConfirm').hidden=true;
+  goHome();
+});
+document.addEventListener('keydown',e=>{
+  if($('screenPlay').hidden||busy||paused||!cur||cur.state!=='play') return;
+  const t=e.target;
+  if(t && (t.tagName==='INPUT'||t.tagName==='TEXTAREA')) return;
+  const map={ArrowUp:'U',ArrowRight:'P',ArrowDown:'D'};
+  if(map[e.key]){ e.preventDefault(); guess(map[e.key]); }
+});
+if(window.ResizeObserver){
+  let lastW=0;
+  new ResizeObserver(()=>{
+    const w=Math.floor($('chartWrap').clientWidth);
+    if(!w||w===lastW||busy||!cur||$('screenPlay').hidden) return;
+    lastW=w;
+    drawChart({rest:cur.state==='missed'});
+  }).observe($('chartWrap'));
+}
+
+renderBoard();
+goHome(true);
+const ready=initDb();
+})();
+</script>
+
+</body></html>
